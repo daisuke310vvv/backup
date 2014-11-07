@@ -5,6 +5,8 @@
 
 bool roundFitting(cv::Mat *m);
 
+void houghCircle(cv::Mat *im,cv::Mat m);
+
 int main(int argc,char *argv[]){
 /*
 	if(!argv[1]){
@@ -24,8 +26,9 @@ int main(int argc,char *argv[]){
 	/* ------------------------------------------------------------------------ */
 
 	int isFound = 0;
+	int count = 1;
 
-	for(i=0;i<200;i++){
+	for(i=0;i<57;i++){
 
 		isFound = 0;
 
@@ -42,9 +45,11 @@ int main(int argc,char *argv[]){
 		/* -------------------------------------------------------------------- */
 		cv::absdiff(inputImg,bg,diffImg);
 		cv::cvtColor(diffImg,gryImg,CV_BGR2GRAY);
-		cv::threshold(gryImg,dstImg,20,255,cv::THRESH_BINARY || cv::THRESH_OTSU);
+		//平滑化
+		cv::GaussianBlur(gryImg,gryImg,cv::Size(9,9),2,2);
+		//cv::threshold(gryImg,dstImg,20,255,cv::THRESH_BINARY || cv::THRESH_OTSU);
 		//Canny
-		//cv::Canny(gryImg,dstImg,20,255,3);
+		//cv::Canny(gryImg,dstImg,10,100,3);
 		/* -------------------------------------------------------------------- */
 
 
@@ -62,19 +67,23 @@ int main(int argc,char *argv[]){
 		// 入力(dstImg)
 		/* -------------------------------------------------------------------- */
 		// 輪郭の検出
-		cv::findContours(dstImg, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+		//cv::findContours(dstImg, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 
 		//TODO: 輪郭の点の間を出力
 
 		//書き出し
-		char name[256];
-		sprintf(name,"outputs/dst/dst_%d.bmp",17800+i);
-		cv::imwrite(name,dstImg);
+		//char name[256];
+		//sprintf(name,"outputs/dst/dst_%d.bmp",17800+i);
+		//cv::imwrite(name,dstImg);
 
 		/* -------------------------------------------------------------------- */
 		// contours : 検出された輪郭の数分配列に格納されている
 		/* -------------------------------------------------------------------- */
+		houghCircle(&inputImg,gryImg);
+
+/*
 		for(k = 0; k < contours.size(); ++k) {
+
 
 			size_t count = contours[k].size();
 
@@ -110,16 +119,17 @@ int main(int argc,char *argv[]){
 		if(isFound != 0){
 			ballFoundCount++;
 		}
-
+*/
 		//書き出し
-		/*
 		char name[256];
 		sprintf(name,"outputs/dst/dst_%d.bmp",17800+i);
 		cv::imwrite(name,dstImg);
-		*/
 
+		//char name[256];
 		sprintf(name,"outputs/roundFit/roundFit_%d.bmp",17800+i);
-		cv::imwrite(name,inputImg);
+		//cv::imwrite(name,inputImg);
+
+		printf("count %d\n",++count);
 
 	}
 
@@ -144,6 +154,37 @@ int main(int argc,char *argv[]){
 
 	return 0;
 }
+
+void houghCircle(cv::Mat *im,cv::Mat m){
+
+		std::vector<cv::Vec3f>circles;
+
+		
+		cv::HoughCircles(m,circles,CV_HOUGH_GRADIENT,2,50,10,100,10,50);
+
+		/*
+		 * ハフ変換の結果に対してボールの色情報検索
+		 * */
+
+		//printf("ciecles.size %lu\n",circles.size());
+
+
+		for(size_t i = 0;i<circles.size();++i){
+			cv::Point center(cvRound(circles[i][0]),cvRound(circles[i][1]));
+
+			int radius = cvRound(circles[i][2]);
+
+			//printf("cirlcle(%d %d) radius %d\n",center.x,center.y,radius);
+
+			//円の中心を描画
+			cv::circle(*im,center,3,cv::Scalar(0,255,0),-1,8,0);
+			//円を描画
+			cv::circle(*im,center,radius,cv::Scalar(0,0,255),3,8,0);
+
+		}
+
+}
+
 
 
 bool roundFitting(cv::Mat *m){
